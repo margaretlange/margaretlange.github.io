@@ -1,0 +1,13 @@
+# Site settings
+title: Margaret Meek Lange
+email: margaret.meek@gmail.com
+description: Exploring Data Science 
+url: "http://margaretmlange.com" # the base hostname & protocol for your site
+twitter_username: jekyllrb
+github_username:  margaretlange
+
+# Build settings
+markdown: redcarpet
+redcarpet:
+  extensions: ["no_intra_emphasis", "fenced_code_blocks", "autolink", "tables", "with_toc_data"]
+

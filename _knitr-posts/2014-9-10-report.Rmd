@@ -1,0 +1,257 @@
+---
+layout: post
+title:  Detecting Fraud in a Mobile Ad Placement Log
+date:   2014-09-10 15:54:44
+categories: jekyll update
+---
+
+We begin with a data set of logged events.  Each event represents a mobile ad placement on an app. Fraud is a considerable problem in the world of mobile ads.  For more details, see the [spider.io Blog](http://www.spider.io/blog/2013/05/a-botnet-primer-for-display-advertisers/).  
+
+###Exploring the Data Set to Detect Fraud
+
+####Single Variables: Devices
+```{r}
+load('/Users/Margaret/Desktop/2014 unemployment/MM_dataset/testData.RData')
+dim(test.data)
+```
+There are 213,053 observations in the data set and 11 features per observation. Let's examine
+the features.
+
+```{r}
+names(test.data)
+```
+The feature **device_id** encodes the device that requests an ad.  Devices request ads when 
+the user of the device takes a triggering action within a mobile app.  The feature **app_id**
+encodes the identifier of the app.  Finally, the feature **publisher_id** encodes the publisher
+of an app.  A single publisher may own multiple apps.  
+
+According to spider.io, fraud occurs when a bot rather than a human triggers a request for an ad.
+Bots work together in botnets-groups of devices that hackers have compromised. Owners of botnets
+either operate fake apps (apps that are not used by real humans) or collude with publishers of real
+apps.  In order to look for fraud in our dataset, and its extent,
+we need to examine the behavior of devices, apps, and publishers. If devices are behaving strangely and it seems
+like they are linked somehow, there may be fraud. If they are closely associated with certain apps and publishers,
+that is further evidence of fraud.
+
+```{r}
+length(levels(test.data$device_id))
+length(levels(test.data$app_id))
+length(levels(test.data$publisher_id))
+```
+
+We see that there are 107,559 unique devices, 916 unique apps, and 306 unique publishers.  We can create
+a data frame that contains one observation per unique device and encodes how many requests each device makes.
+
+```{r}
+require(dplyr)
+#transform test.data using dplyr package
+test.data$price = as.integer(test.data$price)
+test.data$clearing_price = as.double(test.data$clearing_price)
+devices = test.data %>% group_by(device_id) %>% summarize(num.bids = n(), 
+    num.apps = n_distinct(app_id), 
+    num.pub = n_distinct(publisher_id)) %>% arrange(desc(num.bids))
+dim(devices)
+summary(devices$num.bids)
+```
+We can see that most devices make few requests but some make many requests.
+
+```{r}
+mode = sum(devices$num.bids == 1)
+total = dim(test.data)[1]
+mode/total
+```
+34 percent of the devices only make a single ad request.
+```{r}
+top.devices = round(0.01 * dim(devices)[1])
+top.hits = sum(devices$num.bids[1:top.devices])
+top.hits/total
+```
+The top one percent of devices by ad request account for approximately 18 percent of the data.  Now let's look at a histogram
+with a log scale.
+```{r}
+require(ggplot2)
+p <- ggplot(devices, aes(x = num.bids)) + geom_histogram()
+p <- ggplot(devices, aes(x = num.bids)) + 
+  geom_histogram(binwidth=1/5) + scale_x_log10() 
+p <- p + labs(x = "Number of Bids", title = "Number of Bids by Unique Device")
+p
+```
+This figure gives a sense of how skewed the data is.  Now let's look at the behavior of the devices making the most requests.
+(This plot is an expanded version of the one you showed me.)  We can see that they mostly make requests in a suspiciously linear
+fashion.
+
+```{r}
+require(reshape2)
+top_ten = devices[1:10, 1]
+topfraudsters = test.data %>% filter(device_id %in% top_ten) %>%
+  select(device_id, timestamp) %>% arrange(device_id, timestamp)
+topfraudsters = droplevels(topfraudsters)
+total.counts = as.numeric(table(topfraudsters$device_id))
+my.counts = c()
+for(i in 1:length(total.counts)){
+  temp = c(1:total.counts[i])
+  my.counts = c(my.counts, temp)
+}
+topfraudsters = melt(topfraudsters, id.vars="timestamp", value.name = "device")
+topfraudsters = topfraudsters %>% mutate(count = my.counts)
+g <- ggplot(topfraudsters, aes(x=count, y = timestamp, colour=device)) 
+g <- g + geom_line() 
+g <- g + ggtitle("Bidding History of the Ten Devices with the Most Bids")
+g
+```
+
+####Single Variables: Regions
+There is also geographic evidence of fraud.   It makes sense for botnets to be geographically concentrated. The strategy of
+device infiltration might well produce such a pattern. 
+
+
+```{r}
+library("maps")
+library("datasets")
+state.abb = c(state.abb, "DC")
+state.name = c(state.name, "district of columbia")
+state.name = tolower(state.name)
+
+test.data.short = filter(test.data, region != "unknown")
+test.regions = levels(test.data.short$region)
+test.regions = test.regions[test.regions!="unknown"]
+#what are the regions that are not states
+extra.regions = test.regions[which(!test.regions %in% state.abb)]
+#remove extra regions 
+test.data.short = filter(test.data.short, !region %in% extra.regions)
+test.data.short$region = as.character(test.data.short$region)
+
+my.index = match(test.data.short$region, state.abb)
+test.data.short$region = 
+  replace(test.data.short$region, c(1:length(test.data.short$region)), 
+  state.name[my.index])
+
+states <- map_data("state")
+geo <- test.data.short %>% group_by(region) %>% 
+  summarize(region.count = n()) %>% arrange(desc(region.count))
+total <- merge(geo, states, sort = FALSE, by = "region")
+total = arrange(total, order)
+ggplot() + geom_polygon(data=total, aes(x=long, y=lat, 
+  group = group, fill=region.count),colour="white")
+```
+This map shows that most of the logged ad requests are coming from Michigan, Texas, and California. 
+
+####Single Variables: Apps
+There is also suspicious app behavior. Again, let's look at a histogram.
+
+```{r}
+apps = test.data %>% group_by(app_id) %>% 
+  summarize(num.bids = n(), num.devices = n_distinct(device_id)) %>% 
+  arrange(desc(num.bids))
+p2 <- ggplot(apps, aes(x = num.bids)) + 
+  geom_histogram(binwidth=1/5) + scale_x_log10() 
+p2 <- p2 + labs(x = "Number of Bids", title = "Number of Bids by Unique App")
+p2
+```
+Again, we see most of the activity clustered at the left of the distribution, but there is also a long tail.
+Unlike the strangely behaving devices, it is plausible that this pattern *could* be legitimate. Perhaps
+some apps are simply very popular.  We will return to this question later.
+
+####Single Variables: Clearing Price
+We only know the clearing price in the case of auctions won.  What percentage of auctions did the company
+win?
+```{r}
+lost = test.data %>% filter(is.na(clearing_price))
+percent.lost = dim(lost)[1]/dim(test.data)[1]
+percent.won = 1 - percent.lost
+num.won = dim(test.data)[1] - dim(lost)[1]
+```
+The company won 71,901 auctions or 33.7 percent of total auctions.
+
+The clearing prices of the auctions the company has won also look unusual.
+```{r}
+cp.top = test.data %>% filter(clearing_price == 135000)
+percent.cp.top.won = dim(cp.top)[1]/num.won
+percent.cp.top.total = dim(cp.top)[1]/dim(test.data)[1]
+percent.cp.top.won
+percent.cp.top.total
+```
+As you mentioned in your report, 30 percent of the winning auctions and 10 percent of the total auctions
+have a clearing price of 135,000.
+
+####Connections among Variables
+We can explore the connection between apps and devices to see if there is evidence of collusion.
+```{r}
+apps[1:2, ]
+```
+
+
+```{r}
+fraudbot = test.data %>% filter(device_id == '53864fe461707063eaa98501') %>% 
+  select(app_id)
+my.table = table(fraudbot)
+my.table[my.table!=0]
+```
+The device that makes the most ad requests is communicating from single app. This app is in second place for number of requests.
+Even though an app could be legitimately popular, the connection between the app and the strangely behaving device calls the app into question.  The device-app pair is suspicious.
+
+In general, we can look at the joint distribution of apps and devices.  Here I draw a sample
+because calculating a measure over the entire data set takes too much time.
+
+```{r}
+small.test = test.data %>% sample_n(1000)
+small.test = droplevels(small.test)
+small.cross.tab = with(small.test, xtabs(~app_id + device_id))
+Small.Xsq <- chisq.test(small.cross.tab)
+Small.Xsq
+```
+
+Based on the p-value for the chi-squared statistic, it is extremely unlikely that the features **app_id** and **device_id** are 
+independently distributed. 
+
+We can also look for geographic patterns.
+```{r}
+top.regions = test.data %>% filter(device_id %in% top_ten) %>% select(region)
+my.table = table(top.regions)
+my.table[my.table!=0]
+```
+We see that the top ten devices by request are located in just two regions,
+Texas and Michigan. These are also the regions that send the most requests
+overall.
+
+Finally, we can verify by inspection that the top devices by request tend
+to result in a clearing price of 135,000 when that information is available.
+Here is one example:
+```{r}
+fraudbot = test.data %>% filter(device_id == '53864fe461707063eaa98501') %>% 
+  select(clearing_price)
+my.table = table(fraudbot)
+my.table
+```
+
+Thus, our exploration of the data has noted unusual activity by inspecting the features
+**app_id**, **device_id**, **region**, and **clearing_price.**  This activity does not seem to be
+independent, which makes it even more suspicious. While long-tailed distributions occur without
+fraud, this particular combination of long-tailed distributions is most simply explained by
+the existence of a fraudulent botnet.
+
+###Identifying Fraudulent Activity: Some Thoughts
+
+Ideally, we could identify which transactions are fraudulent and take action.  A naive suggestion
+is to ban devices, using criteria based on the observations made in the previous section.
+For instance, the company could refuse to buy ad impressions on all devices from Michigan 
+that made over a certain number of requests during the time represented by the data.  Or we could
+ban all devices involved in past auctions with a clearing price of 135,000.  We could also identify
+suspicious apps based on the most suspicious devices, and then ban additional devices associated with 
+those apps. The problem is that it is not clear which among several possible naive solutions to choose. 
+We would definitely risk false negatives and false positives.
+
+A better possibility is to use an unsupervised learning algorithm to cluster the data.
+The difficulty here is that we have a mixture of categorical and numeric data, so we cannot use the
+most obvious algorithm, k-means.  K-means only works for wholly numeric data. We could recode categorical
+variables as dummy variables, but that might result in too many features. We would probably need a more 
+sophisticated alternative to K-means.  
+
+We also would need to decide whether it was best to cluster devices or some other entity, like device-app pairs.  
+Perhaps some devices and some apps are legitimate some of the time, but when they occur together in an ad request
+they are probably fraudulent. Knowing more about the domain and the goals of the business would help.  
+
+A final possibility would be to introduce a model to help our clustering algorithm.  We could
+model the number of requests made by a device or a device-app pair with an existing
+statistical distribution, and this could help us detect outliers.
+
