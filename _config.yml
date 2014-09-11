@@ -1,4 +1,5 @@
 # Site settings
+destination: ./_site
 title: Margaret Meek Lange
 email: margaret.meek@gmail.com
 description: Exploring Data Science 
