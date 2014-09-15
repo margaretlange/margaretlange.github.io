@@ -1,0 +1,90 @@
+---
+layout: post
+title:  "Exploring the Colour Lovers API: Getting the Data"
+date:   2014-09-10 15:54:44
+categories: jekyll update
+---
+
+There is a lot of great, freely available data on the web that is fascinating to explore with R.  
+Companies and websites that want to expose their data to clients use a web API, where API
+stands for ['Application programming interface.'](http://en.wikipedia.org/wiki/Application_programming_interface)  Many of the most popular APIs now have [R packages](http://cran.r-project.org/web/packages/twitteR/index.html) associated with them. These
+packages help R-users retrieve data from the APIs.  But I want to show how to retrieve data from
+an API of your choice
+without relying on a special package for it. This will allow you to get data from a wide
+range of APIs or even begin to write an R package for a specific API.
+
+In this tutorial, I'll use the [Colour Lovers API](http://www.colourlovers.com/api/) as 
+an example. (It turns out an [R package](http://cran.r-project.org/web/packages/colourlovers/index.html) for this API *was* released this August, but I first began exploring it in May.) This
+API does not require authentication, which makes it ideal for a first try. 
+
+Although I will be working without an API-specific package, I do need two R helper packages.
+
+```{r}
+library("RCurl")
+library("RJSONIO")
+```
+
+First I write a function to retrieve data from the Colour Lovers API.  The key helper
+function 'getURL' is provided by the package **RCurl.**
+
+```{r}
+kResults <- "100"
+kOrder <- "numVotes"
+kSort <- "DESC"
+kFormat <- "json"
+kKeyword <- "ombre"
+
+GetCLURL <- function(parameters, values, class){
+  if(length(parameters) != length(values)){
+    stop("The length of the parameters and the 
+         length of the values must be the same.")
+  }
+  cl.URL.palettes <-
+    paste("http://www.colourlovers.com/api/", class, "?", sep="")
+  cl.URL.options <- 
+    paste(paste(parameters, values, sep="="), collapse="&")
+  cl.URL <- paste(cl.URL.palettes, cl.URL.options, sep="")
+  cl.json <- getURL(cl.URL)
+  return(cl.json)
+}
+```
+Now I call the function I have written.  I'm interested in color palettes
+that contain the keyword 'ombre.'  I'm requesting that data be returned to me
+in JavaScript Object Notation, or [JSON](http://en.wikipedia.org/wiki/JSON).
+
+```{r}
+my.parameters <- c("numResults", "orderCol", "keywords", "sortBy", "format")
+my.values <- c(kResults, kOrder, kKeyword, kSort, kFormat)
+ombre.json <- GetCLURL(my.parameters, my.values, "palettes")
+class(ombre.json)
+length(ombre.json)
+head(ombre.json)
+```
+The return value is simply a very long string in JSON format.  I can convert the JSON string into an R object using the function 'fromJSON' from the R package **RJSONIO.**
+
+```{r}
+ombre.processed <- fromJSON(ombre.json)
+class(ombre.processed)
+length(ombre.processed)
+class(ombre.processed)[[1]]
+```
+
+The R object returned is a list of lists. Each sublist represents a color palette.
+
+```{r}
+ombre.processed[[1]]
+```
+
+Moreover, the sublist elements are of different types.
+
+```{r}
+class(ombre.processed[[1]][[1]])
+class(ombre.processed[[1]][[2]])
+```
+Now I save the list of lists for later manipulation.
+
+```{r}
+save(ombre.processed, file="partI.RData")
+```
+
+Next up: *Exploring the Colour Lovers API: Data Cleaning and Transformation.*
