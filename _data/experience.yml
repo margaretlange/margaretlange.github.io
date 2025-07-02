@@ -1,0 +1,10 @@
+# Jobs
+- company: Key Caliber
+  position: Senior Data Scientist (under NDA)
+  duration: May, 2022 &mdash; Dec, 2024
+  summary: <ul class="resume-item-list"><li>Contributed to Spark data pipeline within Kubernetes cluster</li><li>Analyzed network data using networkx and scikit-network</li><li>Wrote recommendation algorithm using resources from scikit-learn</li><li>Produced embedding using pytorch and a neural network</li><li>Integrated algorithms into development using a flask api and argo scheduler</li><li>Provided algorithmic transparency using shap values</li></ul>
+
+- company: Near Americas
+  position: Data Scientist
+  duration: Oct, 2014 &mdash; Nov, 2021
+  summary: <ul class="resume-item-list"><li>Wrote frameworks to provide descriptive statistics for large (TB) geospatial datasets and advised executive team on results</li><li>Built a big data pipeline to detect linear anomalies in geospatial data</li><li>Created lookalike audiences for marketing consisting of 100 million mobile devices</li><li>Estimated visitors at locations of interest</li><li>Designed and created python software to estimate lift of mobile ads and to detect retail stores that closed</li><li>Worked with product team to write internal and external documentation of software created</li></ul>

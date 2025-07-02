@@ -1,0 +1,44 @@
+# Organizational leadership
+- skill: Languages
+  description: <ul class="resume-item-list"><li>English (fluent)</li> <li>German, A1 (certificate November 2024)</li></ul>
+
+- skill: Programming Languages
+  description: <ul class="resume-item-list"><li>Python (fluent)</li><li>C (intermediate)</li><li>Javascript (beginner)</li></ul>
+
+- skill: Coursera Certificates
+  description: <ul class="resume-item-list"><li>Neural Networks and Deep Learning</li><li>Generative AI with Large Language Models</li></ul>
+
+
+- skill: Coding Frameworks and Libraries
+  description: <ul class="resume-item-list"><li>Hadoop, Spark, Hive, pyspark </li> <li>pandas, numpy, scikit-learn, networkx </li> <li>pytorch, langchain, langgraph </li> <li>flask, fastapi </li> <li>matplotlib, seaborn, D3.js </li></ul>
+
+- skill: GIS Applications
+  description: <ul class="resume-item-list"><li>QGIS, Google Earth </li></ul>
+
+
+- skill: Algorithms
+  description: <ul class="resume-item-list"><li>linear regression, logistic regression, random forests, naive bayes </li> <li>kmeans, hierarchical clustering, dbscan </li></ul>
+
+
+- skill: Databases
+  description: <ul class="resume-item-list"><li>HDFS, PostgreSQL, MySQL, Redshift </li></ul>
+
+
+- skill: Cloud Computing
+  description: <ul class="resume-item-list"><li>AWS s3, ec2, RDS </li></ul>
+
+
+- skill: Version Control Software
+  description: <ul class="resume-item-list"><li>Git, github </li> </ul>
+
+
+- skill: Containerization
+  description: <ul class="resume-item-list"><li>Docker, docker-compose, Kubernetes </li></ul>
+
+
+- skill: Workflow Management Software
+  description: <ul class="resume-item-list"><li>Jira, Github actions, Gitlab </li></ul>
+
+
+- skill: Agile Software
+  description: <ul class="resume-item-list"><li>Trello</li></ul>

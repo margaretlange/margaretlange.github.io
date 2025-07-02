@@ -1,0 +1,5 @@
+# Jobs
+- project: Burr
+  role: contributor
+  github_link: https://github.com/asf-transfer/burr/pull/530
+  summary: <ul class="resume-item-list"><li>Added a deep researcher example to Burr</li><li>Languages used are python and typescript</li></ul>
